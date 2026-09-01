@@ -11,5 +11,6 @@ pub fn router(state: AppState) -> Router {
         .route("/ready", get(health::ready))
         .route("/auth/register", post(auth_routes::register))
         .route("/auth/login", post(auth_routes::login))
+        .route("/auth/me", get(auth_routes::me))
         .with_state(state)
 }

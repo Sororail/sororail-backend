@@ -1,4 +1,6 @@
-use argon2::password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::password_hash::{
+    rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
+};
 use argon2::Argon2;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -46,4 +48,31 @@ pub fn verify_token(token: &str, secret: &str) -> anyhow::Result<Claims> {
         &Validation::default(),
     )?;
     Ok(data.claims)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SECRET: &str = "test-secret-that-is-at-least-32-chars!";
+
+    #[test]
+    fn password_round_trip() {
+        let hash = hash_password("correct horse").unwrap();
+        assert!(verify_password("correct horse", &hash).unwrap());
+        assert!(!verify_password("wrong", &hash).unwrap());
+    }
+
+    #[test]
+    fn token_round_trip() {
+        let id = Uuid::new_v4();
+        let token = issue_token(id, SECRET).unwrap();
+        assert_eq!(verify_token(&token, SECRET).unwrap().sub, id);
+    }
+
+    #[test]
+    fn token_rejected_with_wrong_secret() {
+        let token = issue_token(Uuid::new_v4(), SECRET).unwrap();
+        assert!(verify_token(&token, "a-different-secret-of-sufficient-len").is_err());
+    }
 }
